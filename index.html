@@ -1,793 +1,340 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SECOM 반도체 공정 품질 모니터링 대시보드</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="임상분석전문가 이수현의 취업 포트폴리오">
+<title>이수현 | 임상분석전문가</title>
 <style>
-  :root {
-    --primary:    #4C6EF5;
-    --secondary:  #F76707;
-    --tertiary:   #12B886;
-    --quaternary: #FAB005;
-    --negative:   #E03131;
-    --neutral:    #868E96;
-    --bg:         #F4F6F9;
-    --card-bg:    #FFFFFF;
-    --text:       #212529;
-    --text-muted: #868E96;
-    --border:     #E4E8EE;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
-                 "Malgun Gothic", "맑은 고딕", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  /* ===== 헤더 ===== */
-  header {
-    background: linear-gradient(135deg, #2B3A67 0%, #4C6EF5 100%);
-    color: #fff;
-    padding: 28px 40px 24px;
-  }
-  header h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -0.3px; }
-  header .meta { font-size: 13px; opacity: 0.85; }
-
-  /* ===== 필터 ===== */
-  .filter-bar {
-    background: var(--card-bg);
-    border-bottom: 1px solid var(--border);
-    padding: 16px 40px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 20px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .filter-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-right: 2px;
-    white-space: nowrap;
-  }
-  .chip {
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text-muted);
-    border-radius: 999px;
-    padding: 6px 14px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
-  }
-  .chip:hover { border-color: var(--primary); color: var(--primary); }
-  .chip.active {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: #fff;
-    font-weight: 500;
-  }
-  .chip.active.bad { background: var(--negative); border-color: var(--negative); }
-  .chip.active.good { background: var(--tertiary); border-color: var(--tertiary); }
-  .reset-btn {
-    margin-left: auto;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text);
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.15s ease;
-  }
-  .reset-btn:hover { background: #F1F3F5; border-color: var(--neutral); }
-
-  .filter-status {
-    padding: 10px 40px 0;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .filter-status strong { color: var(--primary); }
-
-  /* ===== KPI 카드 ===== */
-  .summary-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 14px;
-    padding: 16px 40px 22px;
-  }
-  .summary-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
-    border-left: 4px solid var(--primary);
-  }
-  .summary-card.good { border-left-color: var(--tertiary); }
-  .summary-card.bad  { border-left-color: var(--negative); }
-  .summary-card.warn { border-left-color: var(--quaternary); }
-  .summary-card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
-  .summary-card .value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-  .summary-card .value .unit { font-size: 13px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
-  .summary-card .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-
-  /* ===== 차트 그리드 ===== */
-  .chart-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 18px;
-    padding: 0 40px;
-  }
-  .chart-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px 16px;
-  }
-  .chart-card.wide { grid-column: 1 / -1; }
-  .chart-card h3 {
-    margin: 0 0 2px;
-    font-size: 15px;
-    font-weight: 600;
-  }
-  .chart-card .sub-title {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-  }
-  .chart-wrap { position: relative; height: 280px; }
-  .chart-card.wide .chart-wrap { height: 320px; }
-  .chart-caption {
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border);
-    font-size: 12.5px;
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-  .empty-msg {
-    display: none;
-    position: absolute;
-    inset: 0;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    color: var(--text-muted);
-    background: #FAFBFC;
-    border-radius: 8px;
-  }
-  .empty-msg.show { display: flex; }
-
-  /* ===== 하단 섹션 ===== */
-  .bottom-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 18px;
-    margin: 26px 40px 48px;
-  }
-  .info-section {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 22px 26px;
-  }
-  .info-section h2 { margin: 0 0 12px; font-size: 16px; }
-  .info-section ul { padding-left: 18px; margin: 0; line-height: 1.85; font-size: 13.5px; }
-  .info-section li { margin-bottom: 6px; }
-  .badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 4px;
-    margin-right: 6px;
-  }
-  .badge.red   { background: #FFF0F0; color: var(--negative); }
-  .badge.amber { background: #FFF8E1; color: #C77700; }
-  .badge.blue  { background: #EEF2FF; color: var(--primary); }
-
-  footer {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-muted);
-    padding: 0 40px 40px;
-  }
-
-  @media (max-width: 700px) {
-    header, .filter-bar, .summary-row, .chart-grid, .filter-status { padding-left: 16px; padding-right: 16px; }
-    .bottom-grid, footer { margin-left: 16px; margin-right: 16px; padding-left: 0; padding-right: 0; }
-    .reset-btn { margin-left: 0; }
-  }
+/* ===== 색상 변경은 아래 변수만 수정하세요. ===== */
+:root{
+  --mint:#6CC7C4;--mint-dark:#3F9F99;--mint-pale:#F2FBFA;
+  --indigo:#5B5CEB;--lavender:#A5B4FC;
+  --bg:#FAFBFC;--card:#FFF;--text:#222831;--muted:#6B7280;
+  --line:#E6EAF2;--shadow:0 16px 38px rgba(34,40,49,.08);
+  --radius:18px;--container:1160px;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:82px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,Inter,Arial,sans-serif;line-height:1.7}
+a{text-decoration:none;color:inherit}img{max-width:100%;display:block}
+h1,h2,h3,p{margin-top:0}h1,h2,h3{line-height:1.2;letter-spacing:-.035em}
+.container{width:min(calc(100% - 40px),var(--container));margin:auto}
+.section{padding:105px 0}.tint{background:var(--mint-pale)}
+.eyebrow{margin-bottom:10px;color:var(--mint-dark);font-size:.76rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.section-title{max-width:680px;margin-bottom:40px}.section-title h2{font-size:clamp(2rem,4vw,3.2rem);margin-bottom:14px}.section-title p{color:var(--muted)}.section-title .eyebrow{color:var(--mint-dark)}
+.button{display:inline-flex;align-items:center;justify-content:center;min-height:49px;padding:12px 22px;border:1px solid transparent;border-radius:10px;font-weight:800;transition:.2s}
+.button:hover{transform:translateY(-2px)}
+.primary{color:white;background:linear-gradient(135deg,var(--mint),var(--mint-dark));box-shadow:0 10px 24px rgba(108,199,196,.24)}
+.secondary{color:var(--indigo);background:white;border-color:var(--indigo)}
+/* Header */
+header{position:sticky;z-index:20;top:0;background:rgba(250,251,252,.9);backdrop-filter:blur(15px);border-bottom:1px solid transparent}
+header.scrolled{border-color:var(--line);box-shadow:0 8px 22px rgba(34,40,49,.05)}
+.header-inner{min-height:76px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px}
+.brand{font-weight:900;font-size:1.02rem;letter-spacing:-.01em}
+nav{display:flex;gap:28px}
+.nav-link{position:relative;padding:25px 0;font-size:.88rem;font-weight:700}
+.nav-link::after{content:"";position:absolute;left:0;right:100%;bottom:20px;height:2px;background:var(--mint-dark);transition:right .25s ease}
+.nav-link:hover,.nav-link.active{color:var(--mint-dark)}
+.nav-link:hover::after,.nav-link.active::after{right:0}
+.header-cta{justify-self:end}.menu{display:none;border:0;background:transparent;font-size:1.5rem}
+/* Hero */
+.hero{min-height:calc(100vh - 76px);display:grid;align-items:center;background:white;overflow:hidden;position:relative}
+.blob{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:0}
+.blob-a{width:460px;height:460px;background:var(--mint-pale);top:-160px;right:-120px;animation:drift 19s ease-in-out infinite}
+.blob-b{width:340px;height:340px;background:#EEF0FF;bottom:-140px;left:-90px;animation:drift 24s ease-in-out infinite reverse}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(28px,-22px) scale(1.05)}}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.hero-grid{display:grid;grid-template-columns:1.08fr .92fr;align-items:center;gap:80px;position:relative;z-index:1}
+.hero h1{font-size:clamp(3rem,6vw,5.3rem);margin-bottom:22px}.hero h1 span{background:linear-gradient(135deg,var(--mint-dark),var(--indigo));-webkit-background-clip:text;background-clip:text;color:transparent}
+.role{color:var(--indigo);font-weight:900}.desc{max-width:650px;color:var(--muted);font-size:1.03rem}
+.actions{display:flex;gap:12px;margin-top:30px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:45px}
+.metric{padding:17px;background:var(--mint-pale);border:1px solid #CCECEA;border-radius:12px;transition:.2s}.metric:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(63,159,153,.14)}.metric strong,.metric small{display:block}.metric small{color:var(--muted)}
+.visual{position:relative;min-height:540px;display:grid;place-items:center}
+.portrait{width:min(100%,440px);aspect-ratio:4/5;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#EAF8F7,#E7EAFE);border:1px solid #CCECEA;border-radius:90px 28px;box-shadow:var(--shadow);animation:floatY 6.5s ease-in-out infinite}
+.portrait svg{width:85%}.float{position:absolute;padding:13px 15px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);font-size:.8rem;font-weight:800;animation:floatY 5.5s ease-in-out infinite}.f1{top:17%;left:-3%;animation-delay:.3s}.f2{right:-3%;bottom:16%;animation-delay:1.1s}
+/* About */
+.about{display:grid;grid-template-columns:.85fr 1.15fr;gap:90px}.about-text{color:var(--muted)}.checklist{list-style:none;padding:0;margin:28px 0 0;display:grid;gap:11px}.checklist li{color:var(--text);font-weight:700}.checklist li::before{content:"✓";color:var(--mint-dark);margin-right:12px}
+.info-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:28px}
+/* Cards */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{background:white;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 25px rgba(34,40,49,.05);transition:.22s}
+.card:hover{transform:translateY(-7px);box-shadow:0 20px 42px rgba(63,159,153,.14);border-color:#CCECEA}
+.exp{padding:30px;min-height:310px}.num{display:grid;place-items:center;width:47px;height:47px;margin-bottom:28px;background:var(--mint-pale);color:var(--mint-dark);border-radius:12px;font-weight:900}.period{color:var(--mint-dark);font-size:.78rem;font-weight:900}.company{font-weight:800}.exp>p:last-child{color:var(--muted);font-size:.92rem}
+/* Experience timeline */
+.timeline{display:grid;gap:24px}
+.tl-card{background:white;border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 25px rgba(34,40,49,.05);padding:38px;transition:.22s}
+.tl-card:hover{box-shadow:0 20px 42px rgba(63,159,153,.12);border-color:#CCECEA}
+.tl-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:10px 20px}
+.tl-top h3{font-size:1.3rem}
+.tl-period{color:var(--mint-dark);font-weight:900;font-size:.8rem;white-space:nowrap}
+.tl-sub{display:flex;flex-wrap:wrap;gap:8px 16px;margin:6px 0 6px;color:var(--muted);font-size:.88rem}
+.tl-sub b{color:var(--indigo);font-weight:800}
+.tl-org{color:var(--muted);font-size:.85rem;margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--line)}
+.tl-dept{padding:20px 0}.tl-dept+.tl-dept{border-top:1px solid var(--line)}
+.tl-dept-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline;margin-bottom:10px}
+.tl-dept-head h4{font-size:1rem}
+.tl-dept-period{color:var(--indigo);font-size:.74rem;font-weight:800;letter-spacing:.02em}
+.tl-list{margin:0 0 10px;padding-left:19px;color:var(--muted);font-size:.9rem;display:grid;gap:6px}
+.tl-drugs{margin:0;font-size:.84rem;color:var(--text);line-height:1.65}
+.tl-drugs b{color:var(--mint-dark);font-weight:800}
+/* 핵심 요약 + 더보기 */
+.tl-highlights{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
+.tl-highlights li{position:relative;padding-left:22px;color:var(--text);font-weight:700;font-size:.94rem;line-height:1.55}
+.tl-highlights li::before{content:"";position:absolute;left:0;top:.5em;width:7px;height:7px;border-radius:50%;background:var(--mint)}
+.tl-more{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.tl-more summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:7px;color:var(--mint-dark);font-weight:800;font-size:.86rem}
+.tl-more summary::-webkit-details-marker{display:none}
+.tl-more .chev{display:inline-block;transition:.2s;font-size:.75rem}
+.tl-more[open] .chev{transform:rotate(180deg)}
+.tl-more-body{margin-top:20px;display:grid;gap:20px}
+/* Skills */
+.skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.skill{display:flex;gap:14px;align-items:center;padding:21px;background:white;border:1px solid var(--line);border-radius:13px;transition:.2s}.skill:hover{transform:translateY(-4px);box-shadow:0 12px 26px rgba(34,40,49,.08);border-color:#CCECEA}.skill b,.skill small{display:block}.skill small{color:var(--muted)}.skill-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:11px;background:var(--mint-pale);color:var(--mint-dark);font-size:.75rem;font-weight:900}
+.tags{display:flex;flex-wrap:wrap;gap:9px;margin-top:25px}.tags span{padding:8px 13px;background:white;color:var(--indigo);border:1px solid #DCE1FB;border-radius:999px;font-size:.8rem;font-weight:800;transition:.2s}.tags span:hover{background:var(--indigo);color:white}
+/* Projects */
+.project{overflow:hidden}.preview{aspect-ratio:16/10;padding:28px;background:#EAF8F7}.preview svg{width:100%;height:100%}
+.project-body{padding:25px}.label{color:var(--mint-dark);font-size:.72rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.project-body>p:not(.label){color:var(--muted);font-size:.9rem}
+.meta{display:grid;gap:10px;margin:22px 0 0;padding-top:18px;border-top:1px solid var(--line)}.meta div{display:grid;grid-template-columns:72px 1fr;gap:8px}.meta dt{color:var(--muted);font-size:.74rem}.meta dd{margin:0;font-size:.78rem;font-weight:800}.links{display:flex;gap:9px;margin-top:20px}.links a{padding:7px 11px;background:#F4F5FF;color:var(--indigo);border-radius:8px;font-size:.78rem;font-weight:800}
+/* Contact/Footer */
+.contact{display:grid;grid-template-columns:.9fr 1.1fr;gap:65px;padding:58px;background:white;border:1px solid #CCECEA;border-radius:28px;box-shadow:var(--shadow)}
+.contact-copy p:last-child{color:var(--muted)}.contact-list{display:grid;gap:12px}.contact-list a{display:flex;gap:14px;align-items:center;padding:16px;background:var(--mint-pale);border:1px solid transparent;border-radius:12px;transition:.2s}.contact-list a:hover{transform:translateX(5px);background:white;border-color:var(--mint)}.contact-mark{display:grid;place-items:center;width:42px;height:42px;color:white;background:var(--mint);border-radius:11px;font-weight:900}.contact-list small,.contact-list strong{display:block}.contact-list small{color:var(--muted)}
+footer{padding:45px 0 25px;background:var(--mint-pale)}.footer-top,.footer-bottom{display:flex;align-items:center;justify-content:space-between;gap:25px}.footer-nav{display:flex;gap:22px;color:var(--muted);font-size:.8rem}.footer-bottom{margin-top:30px;padding-top:20px;border-top:1px solid #D8E4E3;color:var(--muted);font-size:.72rem}.footer-bottom p{margin:0}
+.top{position:fixed;right:22px;bottom:22px;width:48px;height:48px;border:0;border-radius:50%;color:white;background:var(--mint-dark);opacity:0;pointer-events:none;transition:.2s}.top.show{opacity:1;pointer-events:auto}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .65s ease,transform .65s ease}.reveal.show{opacity:1;transform:none}
+/* 카드형 섹션 순차 등장 */
+.skill-grid .skill:nth-child(1),.grid3>*:nth-child(1),.timeline .tl-card:nth-child(1){transition-delay:0s}
+.skill-grid .skill:nth-child(2),.grid3>*:nth-child(2),.timeline .tl-card:nth-child(2){transition-delay:.08s}
+.skill-grid .skill:nth-child(3),.grid3>*:nth-child(3){transition-delay:.16s}
+.skill-grid .skill:nth-child(4){transition-delay:.24s}
+.skill-grid .skill:nth-child(5){transition-delay:.32s}
+.skill-grid .skill:nth-child(6){transition-delay:.4s}
+@media(max-width:900px){
+ .header-inner{grid-template-columns:1fr auto}.header-cta{display:none}.menu{display:block}.main-nav{position:fixed;inset:76px 0 auto;display:grid;padding:20px;background:white;opacity:0;pointer-events:none;transform:translateY(-15px);box-shadow:var(--shadow)}.main-nav.open{opacity:1;pointer-events:auto;transform:none}.nav-link{padding:13px}
+ .hero-grid,.about,.contact{grid-template-columns:1fr}.hero-copy{text-align:center}.desc{margin-inline:auto}.actions{justify-content:center}.visual{min-height:470px}.about{gap:25px}.grid3{grid-template-columns:repeat(2,1fr)}.grid3>*:last-child{grid-column:1/-1}.skill-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:620px){
+ .container{width:min(calc(100% - 28px),var(--container))}.section{padding:76px 0}.hero{padding-top:60px}.hero h1{font-size:clamp(2.55rem,13vw,4rem)}.actions{display:grid}.metrics,.grid3,.skill-grid,.info-row{grid-template-columns:1fr}.grid3>*:last-child{grid-column:auto}.visual{min-height:390px}.float{font-size:.68rem}.contact{padding:30px 21px}.footer-top,.footer-bottom{align-items:flex-start;flex-direction:column}.footer-nav{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}.reveal{opacity:1;transform:none}}
 </style>
 </head>
 <body>
-
-<header>
-  <h1>SECOM 반도체 공정 품질 모니터링 대시보드</h1>
-  <div class="meta">
-    데이터 출처: 11cha_secom_cleaned.csv · 전체 25건 · 측정 기간 2026-06-30 08:00 ~ 2026-07-01 13:00
+<header id="home">
+  <div class="container header-inner">
+    <a class="brand" href="#home">이수현</a>
+    <button class="menu" aria-label="메뉴 열기" aria-expanded="false">☰</button>
+    <nav class="main-nav">
+      <a class="nav-link active" href="#home">Home</a><a class="nav-link" href="#about">About</a>
+      <a class="nav-link" href="#experience">Experience</a><a class="nav-link" href="#projects">Projects</a>
+      <a class="nav-link" href="#contact">Contact</a>
+    </nav>
+    <a class="button secondary header-cta" href="#contact">Contact Me</a>
   </div>
 </header>
 
-<!-- ===== 필터 영역 ===== -->
-<div class="filter-bar">
-  <div class="filter-group">
-    <span class="filter-label">설비명</span>
-    <div id="equipFilters"></div>
+<main>
+<section class="hero section">
+ <span class="blob blob-a"></span><span class="blob blob-b"></span>
+ <div class="container hero-grid">
+  <div class="hero-copy reveal">
+   <p class="eyebrow">Bioanalysis · Method Validation · CRO</p>
+   <h1>정확함이 쌓이면<br><span>신뢰할 수 있는 근거</span>가 됩니다.</h1>
+   <p class="role">임상분석전문가(Clinical Bioanalyst) 이수현 · 경력 13년+</p>
+   <p class="desc">HPLC-MS/MS 기반 생체시료 분석과 생물학적동등성시험(BE) 분석책임자 경험을 바탕으로, 정확한 데이터 검토와 체계적인 문서화로 신뢰할 수 있는 분석 결과를 제공합니다.</p>
+   <div class="actions"><a class="button primary" href="#experience">경력 보기</a><a class="button secondary" href="#contact">연락하기</a></div>
+   <div class="metrics"><div class="metric"><strong><span class="count" data-target="13">0</span>년+</strong><small>CRO · 진단검사기관 경력</small></div><div class="metric"><strong><span class="count" data-target="6">0</span>개 약물</strong><small>BE시험 분석책임자 총괄</small></div><div class="metric"><strong><span class="count" data-target="40">0</span>종+</strong><small>약물·바이오마커 분석법 개발</small></div></div>
   </div>
-  <div class="filter-group">
-    <span class="filter-label">판정 결과</span>
-    <div id="resultFilters"></div>
+  <div class="visual reveal">
+   <!-- 실제 사진으로 바꾸려면 이 portrait 영역을 img 태그로 교체하세요. -->
+   <div class="portrait">
+    <svg viewBox="0 0 420 520" role="img" aria-label="생체시료 분석 일러스트">
+     <defs>
+      <linearGradient id="liquidGrad" x1="0" y1="0" x2="0" y2="1">
+       <stop offset="0" stop-color="#8FDAD5"/><stop offset="1" stop-color="#3F9F99"/>
+      </linearGradient>
+     </defs>
+     <g fill="#CFE9E7"><circle cx="58" cy="88" r="4"/><circle cx="88" cy="58" r="3"/><circle cx="352" cy="442" r="4"/><circle cx="372" cy="412" r="3"/></g>
+     <g stroke="#A5B4FC" stroke-width="4" fill="none"><line x1="300" y1="120" x2="345" y2="95"/><line x1="345" y1="95" x2="345" y2="145"/><line x1="300" y1="120" x2="300" y2="165"/></g>
+     <g fill="#5B5CEB"><circle cx="300" cy="120" r="9"/><circle cx="345" cy="95" r="7"/><circle cx="345" cy="145" r="7"/><circle cx="300" cy="165" r="6"/></g>
+     <path d="M175 66 H245 V160 C245 160 302 248 302 328 C302 402 262 444 210 444 C158 444 118 402 118 328 C118 248 175 160 175 160 Z" fill="#FFFFFF" stroke="#3F9F99" stroke-width="6"/>
+     <rect x="165" y="54" width="90" height="16" rx="7" fill="#FFFFFF" stroke="#3F9F99" stroke-width="6"/>
+     <path d="M132 326 C132 392 165 428 210 428 C255 428 288 392 288 326 C288 296 268 272 210 272 C152 272 132 296 132 326 Z" fill="url(#liquidGrad)"/>
+     <g fill="#FFFFFF" opacity=".55"><circle cx="180" cy="350" r="7"/><circle cx="230" cy="385" r="9"/><circle cx="200" cy="405" r="5"/><circle cx="245" cy="340" r="5"/></g>
+     <g><rect x="300" y="452" width="16" height="40" rx="4" fill="#A5B4FC"/><rect x="324" y="430" width="16" height="62" rx="4" fill="#6CC7C4"/><rect x="348" y="410" width="16" height="82" rx="4" fill="#3F9F99"/></g>
+    </svg>
+   </div>
+   <div class="float f1">✓ BE Analysis</div><div class="float f2">↗ Method Validation</div>
   </div>
-  <button class="reset-btn" id="resetBtn">🔄 필터 초기화</button>
-</div>
-
-<div class="filter-status" id="filterStatus"></div>
-
-<!-- ===== KPI 카드 ===== -->
-<section class="summary-row" id="summaryRow"></section>
-
-<!-- ===== 차트 그리드 ===== -->
-<section class="chart-grid">
-
-  <div class="chart-card">
-    <h3>① 설비별 생산 건수</h3>
-    <div class="sub-title">설비명 기준 · 판정 결과 누적 (단위: 건)</div>
-    <div class="chart-wrap">
-      <canvas id="chartEquip"></canvas>
-      <div class="empty-msg" id="empty-chartEquip">선택한 조건에 해당하는 데이터가 없음</div>
-    </div>
-    <div class="chart-caption" id="capEquip"></div>
-  </div>
-
-  <div class="chart-card">
-    <h3>② 판정 결과 구성비</h3>
-    <div class="sub-title">양품 / 불량 비중 (단위: 건, %)</div>
-    <div class="chart-wrap">
-      <canvas id="chartResult"></canvas>
-      <div class="empty-msg" id="empty-chartResult">선택한 조건에 해당하는 데이터가 없음</div>
-    </div>
-    <div class="chart-caption" id="capResult"></div>
-  </div>
-
-  <div class="chart-card wide">
-    <h3>③ 시간대별 공정 파라미터 추이</h3>
-    <div class="sub-title">측정일시 기준 · 챔버온도(좌축, ℃) / 압력(우축, kPa)</div>
-    <div class="chart-wrap">
-      <canvas id="chartTrend"></canvas>
-      <div class="empty-msg" id="empty-chartTrend">선택한 조건에 해당하는 데이터가 없음</div>
-    </div>
-    <div class="chart-caption" id="capTrend"></div>
-  </div>
-
-  <div class="chart-card">
-    <h3>④ 챔버온도 분포 (히스토그램)</h3>
-    <div class="sub-title">구간 폭 4.2℃ · 전체 데이터 기준 고정 구간 (단위: 건)</div>
-    <div class="chart-wrap">
-      <canvas id="chartHist"></canvas>
-      <div class="empty-msg" id="empty-chartHist">선택한 조건에 해당하는 데이터가 없음</div>
-    </div>
-    <div class="chart-caption" id="capHist"></div>
-  </div>
-
-  <div class="chart-card">
-    <h3>⑤ 설비별 챔버온도 범위</h3>
-    <div class="sub-title">최솟값~최댓값 구간 + 평균 마커 (단위: ℃)</div>
-    <div class="chart-wrap">
-      <canvas id="chartRange"></canvas>
-      <div class="empty-msg" id="empty-chartRange">선택한 조건에 해당하는 데이터가 없음</div>
-    </div>
-    <div class="chart-caption" id="capRange"></div>
-  </div>
-
-  <div class="chart-card wide">
-    <h3>⑥ 챔버온도 × 가스유량 상관관계</h3>
-    <div class="sub-title">양품/불량 색상 구분 · 전체 데이터 상관계수 r = -0.33</div>
-    <div class="chart-wrap">
-      <canvas id="chartScatter"></canvas>
-      <div class="empty-msg" id="empty-chartScatter">선택한 조건에 해당하는 데이터가 없음</div>
-    </div>
-    <div class="chart-caption" id="capScatter"></div>
-  </div>
-
+ </div>
 </section>
 
-<!-- ===== 하단 인사이트 · 각주 ===== -->
-<section class="bottom-grid">
-  <div class="info-section">
-    <h2>📌 주요 시사점</h2>
-    <ul>
-      <li><span class="badge blue">불량 집중</span>불량 3건 중 2건이 <strong>CVD-01</strong>에서 발생함(해당 설비 불량률 33.3%, 전체 평균 12.0%의 약 2.8배). 다만 표본이 3건뿐이라 통계적 결론이 아닌 <strong>우선 점검 대상 선정 근거</strong>로만 활용해야 함.</li>
-      <li><span class="badge amber">이상치</span>LOT1008(CVD-01)의 챔버온도 272.2℃는 IQR 상한 265.6℃를 초과함. 해당 시점 설비 로그를 별도 확인할 필요가 있음.</li>
-      <li><span class="badge blue">상관관계</span>챔버온도와 가스유량은 약한 음의 상관(r=-0.33)을 보임. 관계가 있어 보이나 <strong>인과관계는 별도 검증이 필요함</strong> — 표본 25건으로는 판단 불가임.</li>
-      <li><span class="badge amber">불량 조건</span>불량 3건의 공정시간은 각각 64·61·59초로 전체 평균 58.96초보다 길고, 3건 모두 압력이 95~97kPa 구간에 몰려 있음. 저압·장시간 조합의 위험성을 추가 데이터로 검증할 가치가 있음.</li>
-    </ul>
-  </div>
+<section class="section" id="about"><div class="container about">
+ <div class="section-title reveal"><p class="eyebrow">About Me</p><h2>정확한 데이터 검토로 임상적 신뢰를 만듭니다.</h2></div>
+ <div class="about-text reveal"><ul class="checklist"><li>생체시료 분석법 개발 및 밸리데이션(MV·Stability)</li><li>생물학적동등성시험(BE) 분석책임자 업무 총괄</li><li>SOP 제·개정 및 식약처 인허가 대응</li></ul>
+  <div class="info-row reveal"><div class="metric"><strong>학력</strong><small>대학교 졸업 · 화학과</small></div><div class="metric"><strong>자격증 · 교육</strong><small>AI 실무역량강화 교육 수료</small></div></div>
+ </div>
+</div></section>
 
-  <div class="info-section">
-    <h2>⚠️ 데이터 품질 각주</h2>
-    <ul>
-      <li><span class="badge red">평균 대체</span><strong>압력</strong> 컬럼 3건(LOT1004·LOT1012·LOT1023)이 소수점 15자리 동일값 96.364286으로, 원본 결측값을 평균으로 대체한 흔적임. 압력 관련 해석은 신뢰도를 낮춰 볼 필요가 있음.</li>
-      <li><span class="badge red">중복 키</span><strong>LOT1003</strong>이 2행 존재함. 측정일시·측정값은 동일하나 설비명만 CVD-01 / ETCH-01로 불일치함 → 전체 행 중복이 아니라 <code>drop_duplicates()</code>로 잡히지 않음. 본 대시보드는 원본 25행을 그대로 반영함.</li>
-      <li><span class="badge amber">행 누락</span>LOT1006·1009·1010·1015·1021·1026 총 6개 LOT이 결번임(이전 전처리 단계에서 제거된 것으로 추정됨).</li>
-      <li><span class="badge amber">클래스 불균형</span>불량 3건(12.0%)으로 표본이 매우 적음. 설비별 불량률 비교는 <strong>참고 지표</strong>로만 사용해야 함.</li>
-    </ul>
-  </div>
-</section>
+<section class="section tint" id="experience"><div class="container">
+ <div class="section-title reveal"><p class="eyebrow">Experience</p><h2>경력 및 주요 경험</h2><p>13년 이상 CRO·진단검사기관에서 생체시료 분석과 분석책임자 업무를 수행해왔습니다.</p></div>
+ <div class="timeline">
 
-<footer>
-  단일 HTML 파일 · Chart.js 4.4.0 (CDN) · 모든 수치는 원본 CSV 25행에서 실시간 집계됨
-</footer>
+  <!-- 경력 1: 노보텍래버러토리코리아 -->
+  <article class="tl-card reveal">
+   <div class="tl-top"><h3>노보텍래버러토리코리아㈜</h3><p class="tl-period">2021.11 — 2024.12 (약 3년 2개월)</p></div>
+   <div class="tl-sub"><span><b>소속</b> 분석연구팀</span></div>
+   <p class="tl-org">호주 시드니 본사의 Global CRO · 임상 1~4상 시험 수탁 수행</p>
+
+   <ul class="tl-highlights">
+    <li>BE시험 분석책임자 — 시험계획서·보고서 검토·승인, 원시 데이터 검토, 일정 관리, 식약처 대응</li>
+    <li>SOP 제·개정 및 분석담당자 교육·업무 조율</li>
+    <li>HPLC-MS/MS 기반 분석법 개발·MV·Stability Test 수행 (분석담당자)</li>
+   </ul>
+   <div class="tags"><span>로수바스타틴</span><span>암로디핀</span><span>다파글리플로진</span><span>아스피린</span><span>클로피도그렐</span><span>+ 5종</span></div>
+
+   <details class="tl-more">
+    <summary>담당 업무 상세보기 <span class="chev">▾</span></summary>
+    <div class="tl-more-body">
+     <div class="tl-dept">
+      <div class="tl-dept-head"><h4>분석책임자 업무</h4></div>
+      <ul class="tl-list">
+       <li>분석시험계획서(Analytical Plan) 및 분석시험보고서(Analytical Report) 검토·최종 승인</li>
+       <li>분석 원시 데이터(Raw Data) 검토: 크로마토그램 적분, 교정곡선 적합성, QC 허용 기준 충족 여부 판단</li>
+       <li>시료 입고부터 보고서 발행까지 단계별 분석 일정 수립 및 관리</li>
+       <li>임상운영팀·QA팀 등 내부 유관부서 및 의뢰사와의 기술 교신</li>
+       <li>식약처 보완자료 요청 대응: 보완 항목 검토, 근거자료 정리 및 회신 문서 작성</li>
+      </ul>
+      <p class="tl-drugs"><b>분석책임자 관리 약물</b> · 로수바스타틴, 암로디핀, 도베실레이트, 다파글리플로진, 아스피린(Fasting/Fed), 클로피도그렐</p>
+     </div>
+     <div class="tl-dept">
+      <div class="tl-dept-head"><h4>SOP 제·개정 및 팀원 관리·교육</h4></div>
+      <ul class="tl-list">
+       <li>분석팀 SOP 신규 작성 및 개정, 버전 관리 · 개정 내용 팀원 교육</li>
+       <li>분석담당자(신규·기존) 대상 분석법 교육 및 업무 지도, 오류 원인 분석 및 재발 방지</li>
+       <li>팀원 업무 배분 및 분석 일정 조율</li>
+      </ul>
+     </div>
+     <div class="tl-dept">
+      <div class="tl-dept-head"><h4>분석법 개발·밸리데이션(MV)·Stability Test (분석담당자)</h4></div>
+      <ul class="tl-list">
+       <li>HPLC-MS/MS를 이용한 생체시료(혈장) 중 약물 분석법 개발, 식약처 가이드라인에 따른 MV 및 Stability Test 수행</li>
+       <li>MV 수행 항목: Selectivity, Linearity, Accuracy, Precision(intra/inter-day), Matrix Effect, Recovery, Dilution Integrity, Carry-over</li>
+       <li>Stability 수행 항목: Bench-top, Freeze-Thaw, Long-term, Stock solution stability</li>
+       <li>검증 완료된 분석법으로 생체시료를 정량 분석하고 분석 배치 구성·QC 판정·결과보고서 작성 수행</li>
+      </ul>
+      <p class="tl-drugs"><b>담당 약물</b> · 다파글리플로진, 레보세티리진, 시타글립틴, 에제티미브, 피타바스타틴, 에스시탈로프람, 테노포비르, 트라마돌, 아토르바스타틴, 로수바스타틴</p>
+     </div>
+    </div>
+   </details>
+  </article>
+
+  <!-- 경력 2: 녹십자의료재단(GCCL) -->
+  <article class="tl-card reveal">
+   <div class="tl-top"><h3>녹십자의료재단(GCCL)</h3><p class="tl-period">2009.02 — 2019.09 (약 10년 8개월)</p></div>
+   <p class="tl-org">진단검사·병리검사 전문기관 · 국제 분석시스템 기반 신약개발·임상시험 수행</p>
+
+   <ul class="tl-highlights">
+    <li>PK 분석, ELISA 기반 분석법 개발·MV, 면역원성 바이오마커 30종+ 분석</li>
+    <li>희귀대사질환 Enzyme Assay 13종, HPLC-MS/MS 기반 분석법 개발·MV</li>
+    <li>BE시험 생체시료 정량분석 35항목+, 심혈관계·소화기계 등 다양한 약물 분석</li>
+   </ul>
+
+   <details class="tl-more">
+    <summary>부서별 상세보기 <span class="chev">▾</span></summary>
+    <div class="tl-more-body">
+     <div class="tl-dept">
+      <div class="tl-dept-head"><h4>임상연구팀</h4><span class="tl-dept-period">2019.03 — 2019.09</span></div>
+      <ul class="tl-list">
+       <li>임상시험 관련 PK 분석, 약물·바이오마커 분석법 개발 및 검증, 면역원성 생체시료 분석</li>
+       <li>ELISA를 이용한 생체시료 중 약물 분석법 개발 및 MV·Stability Test 수행 (Human Plasma 중 PTH(1-34) 정량분석법 개발 포함)</li>
+       <li>ELISA 기법을 이용한 약물 및 바이오마커 30종 이상 면역원성 정량 분석, 검토 및 결과보고서 작성</li>
+       <li>Human IFN-γ ELISPOT 프로토콜 교육 이수 및 초기 셋팅 참여</li>
+      </ul>
+     </div>
+     <div class="tl-dept">
+      <div class="tl-dept-head"><h4>특수생화학팀</h4><span class="tl-dept-period">2016.06 — 2019.02</span></div>
+      <ul class="tl-list">
+       <li>유전성 희귀대사질환 생화학 검사(Enzyme Assay) 13종 수행, 내·외부 정도관리(QC) 및 원가 적정성 평가 참여</li>
+       <li>HPLC-MS/MS, FLD, UV를 이용한 생체시료 약물 분석법 개발 및 MV·Stability Test 수행 (VMA·HVA·5-HIAA, 1,25-Vitamin D<sub>2</sub>&amp;D<sub>3</sub> 분석법 개발·검증 포함)</li>
+      </ul>
+      <p class="tl-drugs"><b>Enzyme Assay 13종</b> · α/β-galactosidase(Fabry/Gaucher Disease), β-glucosidase, Acid α-glucosidase, APRTase, Arylsulfatase A/B, Biotinidase, Chitotriosidase, Fructose-1,6-biphosphate, Glycogen 정량, β-Hexosaminidase A/B, HGPRTase</p>
+     </div>
+     <div class="tl-dept">
+      <div class="tl-dept-head"><h4>대사체연구팀</h4><span class="tl-dept-period">2009.02 — 2016.05</span></div>
+      <ul class="tl-list">
+       <li>HPLC-MS/MS, ICP-MS, IC, ELISA를 이용한 생체시료 약물 분석법 개발 및 MV·Stability Test 수행</li>
+       <li>생물학적동등성시험 생체시료 정량 분석 업무 수행 (35개 항목 이상), 검토 및 결과보고서 작성 전 과정 담당</li>
+      </ul>
+      <p class="tl-drugs"><b>주요 분석 분야</b> · 심혈관계(발사르탄, 칸데사르탄, 올메사르탄, 암로디핀+아토르바스타틴 등), 소화기계(란소프라졸, 시메티딘 등), 항생제, 진통/소염, 정신/신경계, 대사/내분비, 중금속 분석(As·Cr·Co), 특수 분석(GAG 정량, CTH/Gb3, Adalimumab·Calprotectin 등)</p>
+     </div>
+    </div>
+   </details>
+  </article>
+
+ </div>
+</div></section>
+
+<section class="section" id="skills"><div class="container">
+ <div class="section-title reveal"><p class="eyebrow">Core Competencies</p><h2>보유 역량</h2><p>생체시료 분석의 전 과정을 책임지고 신뢰할 수 있는 결과를 만들기 위한 핵심 역량입니다.</p></div>
+ <div class="skill-grid">
+  <div class="skill reveal"><span class="skill-icon">01</span><div><b>BE시험 분석책임자</b><small>시험계획서·보고서 검토 및 승인</small></div></div>
+  <div class="skill reveal"><span class="skill-icon">02</span><div><b>분석법 개발·밸리데이션(MV)</b><small>Selectivity·Linearity·Accuracy·Precision</small></div></div>
+  <div class="skill reveal"><span class="skill-icon">03</span><div><b>Stability Test</b><small>Bench-top·Freeze-Thaw·Long-term</small></div></div>
+  <div class="skill reveal"><span class="skill-icon">04</span><div><b>HPLC-MS/MS 정량분석</b><small>혈장 등 생체시료 정량</small></div></div>
+  <div class="skill reveal"><span class="skill-icon">05</span><div><b>SOP·규제 대응</b><small>SOP 제·개정 · 식약처 보완자료 대응</small></div></div>
+  <div class="skill reveal"><span class="skill-icon">06</span><div><b>팀 관리·교육</b><small>분석담당자 교육 · 일정 조율</small></div></div>
+ </div>
+ <div class="tags reveal"><span>HPLC-MS/MS</span><span>ELISA</span><span>ICP-MS</span><span>Method Validation</span><span>Stability Test</span><span>SOP 관리</span><span>식약처 대응</span><span>Bioequivalence(BE)</span></div>
+</div></section>
+
+<section class="section tint" id="projects"><div class="container">
+ <div class="section-title reveal"><p class="eyebrow">Key Projects</p><h2>주요 분석 프로젝트</h2><p>분석책임자·분석담당자로서 수행한 대표 프로젝트입니다.</p></div>
+ <div class="grid3">
+  <article class="card project reveal"><div class="preview"><svg viewBox="0 0 500 300"><rect width="500" height="300" rx="20" fill="#fff"/><rect x="70" y="35" width="260" height="230" rx="14" fill="#F4F8FC"/><rect x="95" y="60" width="180" height="18" rx="4" fill="#CFE9E7"/><rect x="95" y="95" width="210" height="10" rx="4" fill="#E6EAF2"/><rect x="95" y="117" width="210" height="10" rx="4" fill="#E6EAF2"/><rect x="95" y="139" width="150" height="10" rx="4" fill="#E6EAF2"/><rect x="95" y="170" width="210" height="10" rx="4" fill="#E6EAF2"/><rect x="95" y="192" width="210" height="10" rx="4" fill="#E6EAF2"/><rect x="95" y="214" width="130" height="10" rx="4" fill="#E6EAF2"/><circle cx="365" cy="210" r="58" fill="#3F9F99"/><circle cx="365" cy="210" r="58" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="4 6"/><path d="M338 210l17 17 32-36" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="project-body"><p class="label">Analytical Director</p><h3>생물학적동등성시험(BE) 분석책임자</h3><p>로수바스타틴, 암로디핀 등 다수 약물의 BE시험 분석책임자로서 시험계획서·보고서 검토, 원시데이터 승인, 식약처 보완자료 대응을 총괄했습니다.</p><dl class="meta"><div><dt>담당 역할</dt><dd>분석책임자 · 일정관리 · 규제대응</dd></div><div><dt>사용 기술</dt><dd>HPLC-MS/MS · Analytical Report</dd></div></dl><div class="links"><a href="#experience">경력 상세</a><a href="#contact">문의하기</a></div></div></article>
+  <article class="card project reveal"><div class="preview"><svg viewBox="0 0 500 300"><rect width="500" height="300" rx="20" fill="#fff"/><line x1="70" y1="245" x2="440" y2="245" stroke="#CCD5E0" stroke-width="3"/><line x1="70" y1="245" x2="70" y2="50" stroke="#CCD5E0" stroke-width="3"/><line x1="90" y1="222" x2="415" y2="78" stroke="#5B5CEB" stroke-width="6" stroke-linecap="round"/><g fill="#6CC7C4" stroke="#fff" stroke-width="3"><circle cx="110" cy="214" r="10"/><circle cx="175" cy="184" r="10"/><circle cx="240" cy="158" r="10"/><circle cx="305" cy="128" r="10"/><circle cx="370" cy="102" r="10"/></g><text x="70" y="270" font-family="Arial" font-size="15" fill="#9AA3B2">Concentration → Response</text></svg></div><div class="project-body"><p class="label">Method Validation</p><h3>약물 분석법 개발 및 밸리데이션</h3><p>HPLC-MS/MS로 다파글리플로진, 아토르바스타틴 등 다수 약물의 분석법을 개발하고, 식약처 가이드라인에 따라 MV 및 Stability Test를 수행했습니다.</p><dl class="meta"><div><dt>담당 역할</dt><dd>분석법 개발 · MV · Stability</dd></div><div><dt>사용 기술</dt><dd>HPLC-MS/MS · Method Validation</dd></div></dl><div class="links"><a href="#experience">경력 상세</a><a href="#contact">문의하기</a></div></div></article>
+  <article class="card project reveal"><div class="preview"><svg viewBox="0 0 500 300"><rect width="500" height="300" rx="20" fill="#fff"/><rect x="55" y="35" width="390" height="230" rx="16" fill="#F4F8FC"/><g stroke="#E1E7F0" stroke-width="2"><circle cx="100" cy="85" r="15" fill="none"/><circle cx="160" cy="85" r="15" fill="none"/><circle cx="220" cy="85" r="15" fill="none"/><circle cx="280" cy="85" r="15" fill="none"/><circle cx="340" cy="85" r="15" fill="none"/><circle cx="400" cy="85" r="15" fill="none"/></g><g><circle cx="100" cy="130" r="15" fill="#6CC7C4"/><circle cx="160" cy="130" r="15" fill="#A5B4FC"/><circle cx="220" cy="130" r="15" fill="#3F9F99"/><circle cx="280" cy="130" r="15" fill="#6CC7C4"/><circle cx="340" cy="130" r="15" fill="#A5B4FC"/><circle cx="400" cy="130" r="15" fill="#3F9F99"/></g><g><circle cx="100" cy="175" r="15" fill="#A5B4FC"/><circle cx="160" cy="175" r="15" fill="#3F9F99"/><circle cx="220" cy="175" r="15" fill="#6CC7C4"/><circle cx="280" cy="175" r="15" fill="#A5B4FC"/><circle cx="340" cy="175" r="15" fill="#3F9F99"/><circle cx="400" cy="175" r="15" fill="#6CC7C4"/></g><g><circle cx="100" cy="220" r="15" fill="#3F9F99"/><circle cx="160" cy="220" r="15" fill="#6CC7C4"/><circle cx="220" cy="220" r="15" fill="#A5B4FC"/><circle cx="280" cy="220" r="15" fill="#3F9F99"/><circle cx="340" cy="220" r="15" fill="#6CC7C4"/><circle cx="400" cy="220" r="15" fill="#A5B4FC"/></g></svg></div><div class="project-body"><p class="label">Biochemical Testing</p><h3>희귀대사질환 효소검사(Enzyme Assay) 운영</h3><p>Fabry Disease, Gaucher Disease 등 유전성 희귀대사질환 진단을 위한 효소검사 13종을 수행하고 내·외부 정도관리(QC)를 관리했습니다.</p><dl class="meta"><div><dt>담당 역할</dt><dd>검사 수행 · QC · 보고서 작성</dd></div><div><dt>사용 기술</dt><dd>Enzyme Assay · Internal/External QC</dd></div></dl><div class="links"><a href="#experience">경력 상세</a><a href="#contact">문의하기</a></div></div></article>
+ </div>
+</div></section>
+
+<section class="section" id="contact"><div class="container contact reveal">
+ <div class="contact-copy"><p class="eyebrow">Contact</p><h2>13년간 놓치지 않은 한 가지, <br>정확함입니다.</h2><p>채용, 프로젝트 또는 업무 관련 문의는 아래 연락처로 편하게 연락해주세요.</p></div>
+ <div class="contact-list">
+  <!-- 실제 이메일과 링크로 교체하세요. -->
+  <a href="mailto:suhyeon.lee@example.com"><span class="contact-mark">@</span><span><small>Email</small><strong>suhyeon.lee@example.com</strong></span></a>
+  <a href="https://linkedin.com" target="_blank" rel="noreferrer"><span class="contact-mark">in</span><span><small>LinkedIn</small><strong>linkedin.com/in/suhyeon-lee</strong></span></a>
+  <a href="https://github.com" target="_blank" rel="noreferrer"><span class="contact-mark">↗</span><span><small>GitHub / Blog</small><strong>github.com/suhyeon-lee</strong></span></a>
+ </div>
+</div></section>
+</main>
+
+<footer><div class="container footer-top"><a class="brand" href="#home">이수현</a><div class="footer-nav"><a href="#home">Home</a><a href="#about">About</a><a href="#experience">Experience</a><a href="#projects">Projects</a><a href="#contact">Contact</a></div></div><div class="container footer-bottom"><p>© <span id="year"></span> 이수현. All rights reserved.</p><p>Clinical Analyst Portfolio</p></div></footer>
+<button class="top" aria-label="맨 위로 이동">↑</button>
 
 <script>
-/* =========================================================
-   1. 원본 데이터 (11cha_secom_cleaned.csv 25행 그대로 삽입)
-   컬럼 순서: 공정ID, 측정일시, 설비명, 챔버온도, 압력, 가스유량, 공정시간, 양품여부
-   ========================================================= */
-const RAW = [
-  ["LOT1001","2026-06-30 08:00","ETCH-01",254.0, 99.3,               46.9,66,"양품"],
-  ["LOT1002","2026-06-30 09:00","ETCH-02",252.2,105.1,               43.3,57,"양품"],
-  ["LOT1003","2026-06-30 10:00","CVD-01", 251.9, 90.4,               39.8,57,"양품"],
-  ["LOT1004","2026-06-30 11:00","CVD-02", 246.6, 96.36428571428573,  42.9,51,"양품"],
-  ["LOT1005","2026-06-30 12:00","PVD-01", 250.5, 92.9,               43.4,60,"양품"],
-  ["LOT1007","2026-06-30 14:00","ETCH-02",249.9, 94.7,               47.5,55,"양품"],
-  ["LOT1008","2026-06-30 15:00","CVD-01", 272.2,106.0,               44.4,63,"양품"],
-  ["LOT1011","2026-06-30 18:00","ETCH-01",244.6,103.1,               48.1,63,"양품"],
-  ["LOT1012","2026-06-30 19:00","ETCH-02",248.3, 96.36428571428573,  40.5,64,"불량"],
-  ["LOT1013","2026-06-30 20:00","CVD-01", 241.1, 94.0,               47.4,65,"양품"],
-  ["LOT1014","2026-06-30 21:00","CVD-02", 241.7, 99.6,               47.9,63,"양품"],
-  ["LOT1016","2026-06-30 23:00","ETCH-01",238.6,105.2,               47.7,60,"양품"],
-  ["LOT1017","2026-07-01 00:00","ETCH-02",261.8, 97.4,               42.6,57,"양품"],
-  ["LOT1018","2026-07-01 01:00","CVD-01", 254.0,105.8,               45.8,61,"양품"],
-  ["LOT1019","2026-07-01 02:00","CVD-02", 250.8,104.8,               44.4,58,"양품"],
-  ["LOT1020","2026-07-01 03:00","PVD-01", 260.2, 98.5,               37.0,61,"양품"],
-  ["LOT1022","2026-07-01 05:00","ETCH-02",242.5,107.0,               44.9,53,"양품"],
-  ["LOT1023","2026-07-01 06:00","CVD-01", 250.5, 96.36428571428573,  44.4,61,"불량"],
-  ["LOT1024","2026-07-01 07:00","CVD-02", 252.7,100.0,               47.3,55,"양품"],
-  ["LOT1025","2026-07-01 08:00","PVD-01", 256.3, 95.5,               49.2,54,"양품"],
-  ["LOT1027","2026-07-01 10:00","ETCH-02",250.8, 97.5,               40.3,60,"양품"],
-  ["LOT1028","2026-07-01 11:00","CVD-01", 254.3, 95.4,               46.9,59,"불량"],
-  ["LOT1029","2026-07-01 12:00","CVD-02", 243.7, 98.4,               47.4,55,"양품"],
-  ["LOT1030","2026-07-01 13:00","PVD-01", 260.9,112.7,               44.0,59,"양품"],
-  ["LOT1003","2026-06-30 10:00","ETCH-01",251.9, 90.4,               39.8,57,"양품"]
-];
+const menu=document.querySelector(".menu"),nav=document.querySelector(".main-nav");
+menu.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",open)});
+document.querySelectorAll(".nav-link").forEach(a=>a.addEventListener("click",()=>nav.classList.remove("open")));
+const header=document.querySelector("header"),topBtn=document.querySelector(".top");
+addEventListener("scroll",()=>{header.classList.toggle("scrolled",scrollY>20);topBtn.classList.toggle("show",scrollY>600)},{passive:true});
+topBtn.addEventListener("click",()=>scrollTo({top:0,behavior:"smooth"}));
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("show");io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
+document.getElementById("year").textContent=new Date().getFullYear();
 
-// 배열 → 객체 변환
-const DATA = RAW.map(r => ({
-  lot: r[0], ts: r[1], equip: r[2],
-  temp: r[3], press: r[4], gas: r[5], time: r[6], result: r[7]
-}));
-
-/* =========================================================
-   2. 상수 및 유틸리티
-   ========================================================= */
-const COLORS = {
-  primary:'#4C6EF5', secondary:'#F76707', tertiary:'#12B886',
-  quaternary:'#FAB005', negative:'#E03131', neutral:'#868E96'
-};
-// 설비 순서 고정 (필터링해도 축 순서가 흔들리지 않게 함)
-const EQUIPS  = ["ETCH-01","ETCH-02","CVD-01","CVD-02","PVD-01"];
-const RESULTS = ["양품","불량"];
-const EQUIP_COLORS = [COLORS.primary, COLORS.secondary, COLORS.tertiary, COLORS.quaternary, COLORS.neutral];
-
-// 히스토그램 구간은 전체 데이터 기준으로 고정 → 필터 변경 시 막대 위치가 흔들리지 않음
-const HIST_BINS = 8;
-const TEMP_MIN = Math.min(...DATA.map(d => d.temp));   // 238.6
-const TEMP_MAX = Math.max(...DATA.map(d => d.temp));   // 272.2
-const BIN_W = (TEMP_MAX - TEMP_MIN) / HIST_BINS;       // 4.2
-
-const fmt  = (n, d = 1) => (n === null || isNaN(n)) ? '-' : Number(n).toFixed(d);
-const pct  = (n, total) => total === 0 ? '0.0' : (n / total * 100).toFixed(1);
-const mean = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
-const shortTs = ts => ts.slice(5, 16).replace('-', '/');   // "06/30 08:00"
-
-/* =========================================================
-   3. 필터 상태 관리
-   ========================================================= */
-let filterEquip  = new Set(EQUIPS);
-let filterResult = new Set(RESULTS);
-
-function getFiltered() {
-  return DATA.filter(d => filterEquip.has(d.equip) && filterResult.has(d.result));
-}
-
-// 필터 칩 UI 생성
-function buildChips(containerId, items, stateSet, colorClassFn) {
-  const box = document.getElementById(containerId);
-  box.innerHTML = '';
-  items.forEach(item => {
-    const btn = document.createElement('button');
-    btn.className = 'chip active' + (colorClassFn ? ' ' + colorClassFn(item) : '');
-    btn.textContent = item;
-    btn.onclick = () => {
-      if (stateSet.has(item)) {
-        // 마지막 하나까지 해제되면 빈 화면이 되므로 최소 1개는 유지함
-        if (stateSet.size > 1) stateSet.delete(item);
-      } else {
-        stateSet.add(item);
-      }
-      btn.classList.toggle('active', stateSet.has(item));
-      render();
-    };
-    box.appendChild(btn);
-  });
-}
-
-function resetFilters() {
-  filterEquip  = new Set(EQUIPS);
-  filterResult = new Set(RESULTS);
-  buildChips('equipFilters',  EQUIPS,  filterEquip);
-  buildChips('resultFilters', RESULTS, filterResult, v => v === '양품' ? 'good' : 'bad');
-  render();
-}
-
-/* =========================================================
-   4. 공통 툴팁 콜백 (항목명 · 건수 · 비율)
-   ========================================================= */
-function countTooltip(totalFn) {
-  return {
-    callbacks: {
-      label: ctx => {
-        const v = ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.parsed;
-        const total = totalFn();
-        return `${ctx.dataset.label || ctx.label}: ${v}건 (${pct(v, total)}%)`;
-      },
-      afterLabel: ctx => `전체 대비 비율 기준: ${totalFn()}건`
-    }
-  };
-}
-
-/* =========================================================
-   5. 차트 초기화
-   ========================================================= */
-Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Malgun Gothic", sans-serif';
-Chart.defaults.font.size = 12;
-Chart.defaults.color = '#495057';
-
-const charts = {};
-
-// ① 설비별 건수 (누적 막대)
-charts.equip = new Chart(document.getElementById('chartEquip'), {
-  type: 'bar',
-  data: {
-    labels: EQUIPS,
-    datasets: [
-      { label: '양품', data: [], backgroundColor: COLORS.tertiary, stack: 's' },
-      { label: '불량', data: [], backgroundColor: COLORS.negative, stack: 's' }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'rect' } },
-      tooltip: {
-        callbacks: {
-          title: items => `설비: ${items[0].label}`,
-          label: ctx => {
-            const v = ctx.parsed.y;
-            const equipTotal = charts.equip.data.datasets
-              .reduce((s, ds) => s + (ds.data[ctx.dataIndex] || 0), 0);
-            return `${ctx.dataset.label}: ${v}건 (설비 내 ${pct(v, equipTotal)}%)`;
-          },
-          footer: items => {
-            const i = items[0].dataIndex;
-            const equipTotal = charts.equip.data.datasets.reduce((s, ds) => s + (ds.data[i] || 0), 0);
-            const grand = getFiltered().length;
-            return `설비 합계 ${equipTotal}건 · 전체 대비 ${pct(equipTotal, grand)}%`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: { stacked: true, title: { display: true, text: '설비명' }, grid: { display: false } },
-      y: { stacked: true, beginAtZero: true, title: { display: true, text: '생산 건수 (건)' },
-           ticks: { stepSize: 1, precision: 0 } }
-    }
+/* 히어로 통계 숫자 카운트업 */
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function animateCount(el){
+  const target = +el.dataset.target;
+  if (reduceMotion) { el.textContent = target; return; }
+  const dur = 1100, t0 = performance.now();
+  function step(t){
+    const p = Math.min((t - t0) / dur, 1);
+    el.textContent = Math.round(p * target);
+    if (p < 1) requestAnimationFrame(step);
   }
-});
-
-// ② 판정 결과 구성비 (도넛)
-charts.result = new Chart(document.getElementById('chartResult'), {
-  type: 'doughnut',
-  data: {
-    labels: RESULTS,
-    datasets: [{ data: [], backgroundColor: [COLORS.tertiary, COLORS.negative], borderWidth: 2, borderColor: '#fff' }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false, cutout: '58%',
-    plugins: {
-      legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'circle', padding: 14 } },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-            return `${ctx.label}: ${ctx.parsed}건 (${pct(ctx.parsed, total)}%)`;
-          }
-        }
-      }
-    }
-  }
-});
-
-// ③ 시간대별 추이 (이중 Y축 선 그래프)
-charts.trend = new Chart(document.getElementById('chartTrend'), {
-  type: 'line',
-  data: {
-    labels: [],
-    datasets: [
-      { label: '챔버온도 (℃)', data: [], yAxisID: 'y',  borderColor: COLORS.primary,
-        backgroundColor: 'rgba(76,110,245,0.10)', tension: 0.25, fill: true, pointRadius: 4, pointHoverRadius: 6 },
-      { label: '압력 (kPa)',   data: [], yAxisID: 'y1', borderColor: COLORS.secondary,
-        backgroundColor: 'transparent', tension: 0.25, borderDash: [5, 4], pointRadius: 3, pointHoverRadius: 6 }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, pointStyle: 'line' } },
-      tooltip: {
-        callbacks: {
-          title: items => {
-            const i = items[0].dataIndex;
-            const row = charts.trend._rows[i];
-            return `${row.ts}  ·  ${row.lot} (${row.equip})`;
-          },
-          label: ctx => {
-            const unit = ctx.datasetIndex === 0 ? '℃' : 'kPa';
-            return `${ctx.dataset.label.split(' ')[0]}: ${fmt(ctx.parsed.y)} ${unit}`;
-          },
-          footer: items => {
-            const row = charts.trend._rows[items[0].dataIndex];
-            const total = getFiltered().length;
-            return `판정: ${row.result} · 가스유량 ${fmt(row.gas)} sccm · 공정시간 ${row.time}초\n(표시 중 ${total}건 중 1건, ${pct(1, total)}%)`;
-          }
-        }
-      }
-    },
-    scales: {
-      x:  { title: { display: true, text: '측정일시 (월/일 시:분)' }, ticks: { maxRotation: 45, minRotation: 45 } },
-      y:  { position: 'left',  title: { display: true, text: '챔버온도 (℃)' }, grid: { color: '#F1F3F5' } },
-      y1: { position: 'right', title: { display: true, text: '압력 (kPa)' }, grid: { drawOnChartArea: false } }
-    }
-  }
-});
-
-// ④ 챔버온도 히스토그램
-charts.hist = new Chart(document.getElementById('chartHist'), {
-  type: 'bar',
-  data: {
-    labels: Array.from({ length: HIST_BINS }, (_, i) =>
-      `${(TEMP_MIN + i * BIN_W).toFixed(1)}~${(TEMP_MIN + (i + 1) * BIN_W).toFixed(1)}`),
-    datasets: [{ label: '건수', data: [], backgroundColor: COLORS.primary, borderRadius: 3 }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          title: items => `챔버온도 구간: ${items[0].label} ℃`,
-          label: ctx => {
-            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-            return `건수: ${ctx.parsed.y}건 (${pct(ctx.parsed.y, total)}%)`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: { title: { display: true, text: '챔버온도 구간 (℃)' }, ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } }, grid: { display: false } },
-      y: { beginAtZero: true, title: { display: true, text: '건수 (건)' }, ticks: { stepSize: 1, precision: 0 } }
-    }
-  }
-});
-
-// ⑤ 설비별 챔버온도 범위 (플로팅 바 = 박스플롯 대체) + 평균 마커
-charts.range = new Chart(document.getElementById('chartRange'), {
-  type: 'bar',
-  data: {
-    labels: EQUIPS,
-    datasets: [
-      { label: '최솟값~최댓값 범위', data: [], backgroundColor: 'rgba(76,110,245,0.35)',
-        borderColor: COLORS.primary, borderWidth: 1, borderSkipped: false, borderRadius: 4, order: 2 },
-      { label: '평균', type: 'scatter', data: [], backgroundColor: COLORS.negative,
-        pointRadius: 6, pointStyle: 'rectRot', order: 1 }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true } },
-      tooltip: {
-        callbacks: {
-          title: items => `설비: ${items[0].label}`,
-          label: ctx => {
-            const s = charts.range._stats[ctx.dataIndex];
-            if (!s) return '데이터 없음';
-            if (ctx.datasetIndex === 1) return `평균: ${fmt(s.avg)} ℃`;
-            const total = getFiltered().length;
-            return [
-              `최솟값: ${fmt(s.min)} ℃ / 최댓값: ${fmt(s.max)} ℃`,
-              `범위 폭: ${fmt(s.max - s.min)} ℃`,
-              `건수: ${s.n}건 (전체 ${total}건 중 ${pct(s.n, total)}%)`
-            ];
-          }
-        }
-      }
-    },
-    scales: {
-      x: { title: { display: true, text: '설비명' }, grid: { display: false } },
-      y: { title: { display: true, text: '챔버온도 (℃)' }, suggestedMin: 235, suggestedMax: 275 }
-    }
-  }
-});
-
-// ⑥ 산점도
-charts.scatter = new Chart(document.getElementById('chartScatter'), {
-  type: 'scatter',
-  data: {
-    datasets: [
-      { label: '양품', data: [], backgroundColor: 'rgba(18,184,134,0.75)',  pointRadius: 6, pointHoverRadius: 9 },
-      { label: '불량', data: [], backgroundColor: 'rgba(224,49,49,0.85)',   pointRadius: 8, pointHoverRadius: 11, pointStyle: 'triangle' }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true } },
-      tooltip: {
-        callbacks: {
-          title: ctx => `${ctx[0].raw.lot} (${ctx[0].raw.equip})`,
-          label: ctx => [
-            `판정: ${ctx.dataset.label}`,
-            `챔버온도: ${fmt(ctx.parsed.x)} ℃`,
-            `가스유량: ${fmt(ctx.parsed.y)} sccm`
-          ],
-          footer: ctx => {
-            const total = getFiltered().length;
-            const grp = ctx[0].dataset.data.length;
-            return `${ctx[0].dataset.label} ${grp}건 · 표시 중 ${total}건 대비 ${pct(grp, total)}%`;
-          }
-        }
-      }
-    },
-    scales: {
-      x: { title: { display: true, text: '챔버온도 (℃)' } },
-      y: { title: { display: true, text: '가스유량 (sccm)' } }
-    }
-  }
-});
-
-/* =========================================================
-   6. 렌더링 (필터 변경 시 KPI + 전체 차트 동시 갱신)
-   ========================================================= */
-function toggleEmpty(id, isEmpty) {
-  document.getElementById('empty-' + id).classList.toggle('show', isEmpty);
+  requestAnimationFrame(step);
 }
-
-function render() {
-  const rows  = getFiltered();
-  const total = rows.length;
-  const isEmpty = total === 0;
-
-  /* ---- 필터 상태 표시 ---- */
-  document.getElementById('filterStatus').innerHTML =
-    `선택 조건: 설비 <strong>${[...filterEquip].join(', ')}</strong> · 판정 <strong>${[...filterResult].join(', ')}</strong> ` +
-    `→ 전체 25건 중 <strong>${total}건</strong> (${pct(total, 25)}%) 표시 중`;
-
-  /* ---- KPI 카드 ---- */
-  const good = rows.filter(d => d.result === '양품').length;
-  const bad  = rows.filter(d => d.result === '불량').length;
-  const cards = [
-    { cls: '',     label: '전체 건수',    value: total,                          unit: '건',
-      sub: `전체 25건 대비 ${pct(total, 25)}%` },
-    { cls: 'good', label: '양품 건수',    value: good,                           unit: '건',
-      sub: `양품률 ${pct(good, total)}%` },
-    { cls: 'bad',  label: '불량 건수',    value: bad,                            unit: '건',
-      sub: `불량률 ${pct(bad, total)}%` },
-    { cls: 'warn', label: '평균 챔버온도', value: fmt(mean(rows.map(d => d.temp))), unit: '℃',
-      sub: isEmpty ? '-' : `범위 ${fmt(Math.min(...rows.map(d => d.temp)))} ~ ${fmt(Math.max(...rows.map(d => d.temp)))}` },
-    { cls: 'warn', label: '평균 압력',     value: fmt(mean(rows.map(d => d.press)), 2), unit: 'kPa',
-      sub: '⚠ 결측 3건 평균 대체 포함' },
-    { cls: '',     label: '평균 공정시간', value: fmt(mean(rows.map(d => d.time)), 2), unit: '초',
-      sub: `가동 설비 ${new Set(rows.map(d => d.equip)).size}종` }
-  ];
-  document.getElementById('summaryRow').innerHTML = cards.map(c => `
-    <div class="summary-card ${c.cls}">
-      <div class="label">${c.label}</div>
-      <div class="value">${c.value}<span class="unit">${c.unit}</span></div>
-      <div class="sub">${c.sub}</div>
-    </div>`).join('');
-
-  /* ---- ① 설비별 건수 ---- */
-  charts.equip.data.datasets[0].data = EQUIPS.map(e => rows.filter(d => d.equip === e && d.result === '양품').length);
-  charts.equip.data.datasets[1].data = EQUIPS.map(e => rows.filter(d => d.equip === e && d.result === '불량').length);
-  charts.equip.update();
-  toggleEmpty('chartEquip', isEmpty);
-  const topEquip = EQUIPS.map(e => ({ e, n: rows.filter(d => d.equip === e).length }))
-                         .sort((a, b) => b.n - a.n)[0];
-  document.getElementById('capEquip').textContent = isEmpty ? '표시할 데이터가 없음'
-    : `최다 생산 설비는 ${topEquip.e}(${topEquip.n}건, ${pct(topEquip.n, total)}%)임. 불량이 특정 설비에 몰려 있다면 해당 설비의 정비 이력을 우선 점검할 필요가 있음.`;
-
-  /* ---- ② 판정 결과 구성비 ---- */
-  charts.result.data.datasets[0].data = [good, bad];
-  charts.result.update();
-  toggleEmpty('chartResult', isEmpty);
-  document.getElementById('capResult').textContent = isEmpty ? '표시할 데이터가 없음'
-    : `불량률 ${pct(bad, total)}%(${bad}건)임. 불량 표본이 5건 미만이면 비율 변동 폭이 커지므로, 누적 데이터 확보 후 재평가가 필요함.`;
-
-  /* ---- ③ 시간대별 추이 ---- */
-  const sorted = [...rows].sort((a, b) => a.ts.localeCompare(b.ts));
-  charts.trend._rows = sorted;
-  charts.trend.data.labels = sorted.map(d => shortTs(d.ts));
-  charts.trend.data.datasets[0].data = sorted.map(d => d.temp);
-  charts.trend.data.datasets[1].data = sorted.map(d => d.press);
-  charts.trend.update();
-  toggleEmpty('chartTrend', isEmpty);
-  document.getElementById('capTrend').textContent = isEmpty ? '표시할 데이터가 없음'
-    : `${sorted.length}개 시점의 추이임. 챔버온도와 압력이 동시에 급변하는 구간은 설비 상태 변화 신호일 수 있으므로 해당 시각의 알람 로그와 대조할 필요가 있음.`;
-
-  /* ---- ④ 히스토그램 ---- */
-  const bins = new Array(HIST_BINS).fill(0);
-  rows.forEach(d => {
-    let idx = Math.floor((d.temp - TEMP_MIN) / BIN_W);
-    if (idx >= HIST_BINS) idx = HIST_BINS - 1;   // 최댓값을 마지막 구간에 포함시킴
-    if (idx < 0) idx = 0;
-    bins[idx]++;
-  });
-  charts.hist.data.datasets[0].data = bins;
-  charts.hist.update();
-  toggleEmpty('chartHist', isEmpty);
-  const modeIdx = bins.indexOf(Math.max(...bins));
-  document.getElementById('capHist').textContent = isEmpty ? '표시할 데이터가 없음'
-    : `최빈 구간은 ${charts.hist.data.labels[modeIdx]}℃(${bins[modeIdx]}건, ${pct(bins[modeIdx], total)}%)임. 오른쪽 끝 구간(268.0~272.2℃)에 값이 남아 있다면 이상치 LOT1008이 포함된 상태이므로 해석에 주의가 필요함.`;
-
-  /* ---- ⑤ 설비별 온도 범위 ---- */
-  const stats = EQUIPS.map(e => {
-    const t = rows.filter(d => d.equip === e).map(d => d.temp);
-    return t.length ? { min: Math.min(...t), max: Math.max(...t), avg: mean(t), n: t.length } : null;
-  });
-  charts.range._stats = stats;
-  charts.range.data.datasets[0].data = stats.map(s => s ? [s.min, s.max] : null);
-  charts.range.data.datasets[1].data = stats.map((s, i) => s ? { x: i, y: s.avg } : null);
-  charts.range.update();
-  toggleEmpty('chartRange', isEmpty);
-  const widest = stats.map((s, i) => s ? { e: EQUIPS[i], w: s.max - s.min } : null)
-                      .filter(Boolean).sort((a, b) => b.w - a.w)[0];
-  document.getElementById('capRange').textContent = isEmpty ? '표시할 데이터가 없음'
-    : `온도 변동 폭이 가장 큰 설비는 ${widest.e}(${fmt(widest.w)}℃)임. 변동 폭이 큰 설비는 온도 제어 안정성이 낮다는 뜻이므로 PID 파라미터 재조정 검토 대상임.`;
-
-  /* ---- ⑥ 산점도 ---- */
-  charts.scatter.data.datasets[0].data = rows.filter(d => d.result === '양품')
-    .map(d => ({ x: d.temp, y: d.gas, lot: d.lot, equip: d.equip }));
-  charts.scatter.data.datasets[1].data = rows.filter(d => d.result === '불량')
-    .map(d => ({ x: d.temp, y: d.gas, lot: d.lot, equip: d.equip }));
-  charts.scatter.update();
-  toggleEmpty('chartScatter', isEmpty);
-  document.getElementById('capScatter').textContent = isEmpty ? '표시할 데이터가 없음'
-    : `챔버온도가 높을수록 가스유량이 다소 낮아지는 약한 음의 경향(r=-0.33)이 보임. 상관은 인과가 아니므로 공정 조건 변경 전 별도 실험 설계가 필요함.`;
-}
-
-/* =========================================================
-   7. 초기 실행
-   ========================================================= */
-document.getElementById('resetBtn').onclick = resetFilters;
-buildChips('equipFilters',  EQUIPS,  filterEquip);
-buildChips('resultFilters', RESULTS, filterResult, v => v === '양품' ? 'good' : 'bad');
-render();
+document.querySelectorAll(".count").forEach(el=>setTimeout(()=>animateCount(el),300));
 </script>
-
 </body>
 </html>
