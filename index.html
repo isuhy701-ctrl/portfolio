@@ -74,23 +74,9 @@ nav{display:flex;gap:28px}
 .tl-sub{display:flex;flex-wrap:wrap;gap:8px 16px;margin:6px 0 6px;color:var(--muted);font-size:.88rem}
 .tl-sub b{color:var(--indigo);font-weight:800}
 .tl-org{color:var(--muted);font-size:.85rem;margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--line)}
-.tl-dept{padding:20px 0}.tl-dept+.tl-dept{border-top:1px solid var(--line)}
-.tl-dept-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline;margin-bottom:10px}
-.tl-dept-head h4{font-size:1rem}
-.tl-dept-period{color:var(--indigo);font-size:.74rem;font-weight:800;letter-spacing:.02em}
-.tl-list{margin:0 0 10px;padding-left:19px;color:var(--muted);font-size:.9rem;display:grid;gap:6px}
-.tl-drugs{margin:0;font-size:.84rem;color:var(--text);line-height:1.65}
-.tl-drugs b{color:var(--mint-dark);font-weight:800}
-/* 핵심 요약 + 더보기 */
 .tl-highlights{list-style:none;margin:18px 0 0;padding:0;display:grid;gap:10px}
 .tl-highlights li{position:relative;padding-left:22px;color:var(--text);font-weight:700;font-size:.94rem;line-height:1.55}
 .tl-highlights li::before{content:"";position:absolute;left:0;top:.5em;width:7px;height:7px;border-radius:50%;background:var(--mint)}
-.tl-more{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
-.tl-more summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:7px;color:var(--mint-dark);font-weight:800;font-size:.86rem}
-.tl-more summary::-webkit-details-marker{display:none}
-.tl-more .chev{display:inline-block;transition:.2s;font-size:.75rem}
-.tl-more[open] .chev{transform:rotate(180deg)}
-.tl-more-body{display:grid;gap:20px;overflow:hidden;max-height:0;padding-top:20px;transition:max-height .4s ease}
 /* Skills */
 .skill-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.skill{display:flex;gap:14px;align-items:center;padding:21px;background:white;border:1px solid var(--line);border-radius:13px;transition:.2s}.skill:hover{transform:translateY(-4px);box-shadow:0 12px 26px rgba(34,40,49,.08);border-color:#CCECEA}.skill b,.skill small{display:block}.skill small{color:var(--muted)}.skill b{transition:color .2s}.skill:hover b{color:var(--mint-dark)}
 .skill-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:11px;background:var(--mint-pale);color:var(--mint-dark);font-size:.75rem;font-weight:900;transition:.2s}.skill:hover .skill-icon{background:var(--mint-dark);color:#fff;transform:scale(1.1)}
@@ -176,7 +162,7 @@ footer{padding:45px 0 25px;background:var(--mint-pale)}.footer-top,.footer-botto
 
 <section class="section" id="about"><div class="container about">
  <div class="section-title reveal"><p class="eyebrow">About Me</p><h2>정확한 데이터 검토로 임상적 신뢰를 만듭니다.</h2></div>
- <div class="about-text reveal"><ul class="checklist"><li>생체시료 분석법 개발 및 밸리데이션(MV·Stability)</li><li>생물학적동등성시험(BE) 분석책임자 업무 총괄</li><li>SOP 제·개정 및 식약처 인허가 대응</li></ul>
+ <div class="about-text reveal"><ul class="checklist"><li>생체시료 분석법 개발 및 밸리데이션(MV·Stability)</li><li>생물학적동등성시험(BE) 분석책임자 업무 총괄</li><li>SOP 제·개정 및 식약처 보완자료 대응</li></ul>
   <div class="info-row reveal"><div class="metric"><strong>학력</strong><small>대학교 졸업 · 화학과</small></div><div class="metric"><strong>자격증 · 교육</strong><small>AI 실무역량강화 교육 수료</small></div></div>
  </div>
 </div></section>
@@ -198,40 +184,6 @@ footer{padding:45px 0 25px;background:var(--mint-pale)}.footer-top,.footer-botto
    </ul>
    <div class="tags"><span>로수바스타틴</span><span>암로디핀</span><span>다파글리플로진</span><span>아스피린</span><span>클로피도그렐</span><span>+ 5종</span></div>
 
-   <details class="tl-more">
-    <summary>담당 업무 상세보기 <span class="chev">▾</span></summary>
-    <div class="tl-more-body">
-     <div class="tl-dept">
-      <div class="tl-dept-head"><h4>분석책임자 업무</h4></div>
-      <ul class="tl-list">
-       <li>분석시험계획서(Analytical Plan) 및 분석시험보고서(Analytical Report) 검토·최종 승인</li>
-       <li>분석 원시 데이터(Raw Data) 검토: 크로마토그램 적분, 교정곡선 적합성, QC 허용 기준 충족 여부 판단</li>
-       <li>시료 입고부터 보고서 발행까지 단계별 분석 일정 수립 및 관리</li>
-       <li>임상운영팀·QA팀 등 내부 유관부서 및 의뢰사와의 기술 교신</li>
-       <li>식약처 보완자료 요청 대응: 보완 항목 검토, 근거자료 정리 및 회신 문서 작성</li>
-      </ul>
-      <p class="tl-drugs"><b>분석책임자 관리 약물</b> · 로수바스타틴, 암로디핀, 도베실레이트, 다파글리플로진, 아스피린(Fasting/Fed), 클로피도그렐</p>
-     </div>
-     <div class="tl-dept">
-      <div class="tl-dept-head"><h4>SOP 제·개정 및 팀원 관리·교육</h4></div>
-      <ul class="tl-list">
-       <li>분석팀 SOP 신규 작성 및 개정, 버전 관리 · 개정 내용 팀원 교육</li>
-       <li>분석담당자(신규·기존) 대상 분석법 교육 및 업무 지도, 오류 원인 분석 및 재발 방지</li>
-       <li>팀원 업무 배분 및 분석 일정 조율</li>
-      </ul>
-     </div>
-     <div class="tl-dept">
-      <div class="tl-dept-head"><h4>분석법 개발·밸리데이션(MV)·Stability Test (분석담당자)</h4></div>
-      <ul class="tl-list">
-       <li>HPLC-MS/MS를 이용한 생체시료(혈장) 중 약물 분석법 개발, 식약처 가이드라인에 따른 MV 및 Stability Test 수행</li>
-       <li>MV 수행 항목: Selectivity, Linearity, Accuracy, Precision(intra/inter-day), Matrix Effect, Recovery, Dilution Integrity, Carry-over</li>
-       <li>Stability 수행 항목: Bench-top, Freeze-Thaw, Long-term, Stock solution stability</li>
-       <li>검증 완료된 분석법으로 생체시료를 정량 분석하고 분석 배치 구성·QC 판정·결과보고서 작성 수행</li>
-      </ul>
-      <p class="tl-drugs"><b>담당 약물</b> · 다파글리플로진, 레보세티리진, 시타글립틴, 에제티미브, 피타바스타틴, 에스시탈로프람, 테노포비르, 트라마돌, 아토르바스타틴, 로수바스타틴</p>
-     </div>
-    </div>
-   </details>
   </article>
 
   <!-- 경력 2: 녹십자의료재단(GCCL) -->
@@ -245,36 +197,6 @@ footer{padding:45px 0 25px;background:var(--mint-pale)}.footer-top,.footer-botto
     <li>BE시험 생체시료 정량분석 35항목+, 심혈관계·소화기계 등 다양한 약물 분석</li>
    </ul>
 
-   <details class="tl-more">
-    <summary>부서별 상세보기 <span class="chev">▾</span></summary>
-    <div class="tl-more-body">
-     <div class="tl-dept">
-      <div class="tl-dept-head"><h4>임상연구팀</h4><span class="tl-dept-period">2019.03 — 2019.09</span></div>
-      <ul class="tl-list">
-       <li>임상시험 관련 PK 분석, 약물·바이오마커 분석법 개발 및 검증, 면역원성 생체시료 분석</li>
-       <li>ELISA를 이용한 생체시료 중 약물 분석법 개발 및 MV·Stability Test 수행 (Human Plasma 중 PTH(1-34) 정량분석법 개발 포함)</li>
-       <li>ELISA 기법을 이용한 약물 및 바이오마커 30종 이상 면역원성 정량 분석, 검토 및 결과보고서 작성</li>
-       <li>Human IFN-γ ELISPOT 프로토콜 교육 이수 및 초기 셋팅 참여</li>
-      </ul>
-     </div>
-     <div class="tl-dept">
-      <div class="tl-dept-head"><h4>특수생화학팀</h4><span class="tl-dept-period">2016.06 — 2019.02</span></div>
-      <ul class="tl-list">
-       <li>유전성 희귀대사질환 생화학 검사(Enzyme Assay) 13종 수행, 내·외부 정도관리(QC) 및 원가 적정성 평가 참여</li>
-       <li>HPLC-MS/MS, FLD, UV를 이용한 생체시료 약물 분석법 개발 및 MV·Stability Test 수행 (VMA·HVA·5-HIAA, 1,25-Vitamin D<sub>2</sub>&amp;D<sub>3</sub> 분석법 개발·검증 포함)</li>
-      </ul>
-      <p class="tl-drugs"><b>Enzyme Assay 13종</b> · α/β-galactosidase(Fabry/Gaucher Disease), β-glucosidase, Acid α-glucosidase, APRTase, Arylsulfatase A/B, Biotinidase, Chitotriosidase, Fructose-1,6-biphosphate, Glycogen 정량, β-Hexosaminidase A/B, HGPRTase</p>
-     </div>
-     <div class="tl-dept">
-      <div class="tl-dept-head"><h4>대사체연구팀</h4><span class="tl-dept-period">2009.02 — 2016.05</span></div>
-      <ul class="tl-list">
-       <li>HPLC-MS/MS, ICP-MS, IC, ELISA를 이용한 생체시료 약물 분석법 개발 및 MV·Stability Test 수행</li>
-       <li>생물학적동등성시험 생체시료 정량 분석 업무 수행 (35개 항목 이상), 검토 및 결과보고서 작성 전 과정 담당</li>
-      </ul>
-      <p class="tl-drugs"><b>주요 분석 분야</b> · 심혈관계(발사르탄, 칸데사르탄, 올메사르탄, 암로디핀+아토르바스타틴 등), 소화기계(란소프라졸, 시메티딘 등), 항생제, 진통/소염, 정신/신경계, 대사/내분비, 중금속 분석(As·Cr·Co), 특수 분석(GAG 정량, CTH/Gb3, Adalimumab·Calprotectin 등)</p>
-     </div>
-    </div>
-   </details>
   </article>
 
  </div>
@@ -345,24 +267,6 @@ const spy=new IntersectionObserver(es=>{
 },{rootMargin:"-45% 0px -50% 0px",threshold:0});
 document.querySelectorAll("main section[id]").forEach(s=>spy.observe(s));
 addEventListener("scroll",()=>{if(scrollY<120){navLinks.forEach(l=>l.classList.toggle("active",l.getAttribute("href")==="#home"))}},{passive:true});
-
-/* "상세보기" 부드러운 펼침/접힘 애니메이션 */
-document.querySelectorAll(".tl-more").forEach(det=>{
-  const summary=det.querySelector("summary"),body=det.querySelector(".tl-more-body");
-  summary.addEventListener("click",e=>{
-    e.preventDefault();
-    if(det.open){
-      body.style.maxHeight=body.scrollHeight+"px";
-      requestAnimationFrame(()=>{body.style.maxHeight="0px"});
-      body.addEventListener("transitionend",function h(){det.open=false;body.removeEventListener("transitionend",h)},{once:true});
-    }else{
-      det.open=true;
-      body.style.maxHeight="0px";
-      requestAnimationFrame(()=>{body.style.maxHeight=body.scrollHeight+"px"});
-      body.addEventListener("transitionend",function h(){body.style.maxHeight="none";body.removeEventListener("transitionend",h)},{once:true});
-    }
-  });
-});
 
 /* 히어로 통계 숫자 카운트업 */
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
